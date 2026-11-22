@@ -143,8 +143,7 @@ int main(int argc, char **argv) {
 
     fprintf(stderr, "# hpc-kernels: %zu axpy, %zu softmax, %zu matmul, threads=%d\n", n_axpy,
             n_soft, n_mm, threads);
-    fprintf(stderr, "kernel,variant,n,median_s,best_s,gops,gbs,spread_pct\n");
-    printf("kernel,variant,n,median_s,best_s,work,best_metric,unit,spread_pct\n");
+    printf("kernel,variant,n,best_s,median_s,metric,unit,spread_pct\n");
 
     /* ---- axpy: bandwidth bound (2 reads + 1 write per element) ---------- */
     {
@@ -163,8 +162,6 @@ int main(int argc, char **argv) {
         timing_t t_opt = measure(run_axpy_omp, &c_opt);
 
         const double bytes = 3.0 * (double)n_axpy * sizeof(double);
-        fprintf(stderr, "axpy,ref,%zu,%.6f,%.6f,%.3f,%.1f,%.2f\n", n_axpy, t_ref.median,
-                t_ref.best, 0.0, bytes / t_ref.best / 1e9, t_ref.spread_pct);
         row("axpy", "ref", n_axpy, t_ref, bytes / t_ref.best / 1e9, "GB/s");
         row("axpy", "omp", n_axpy, t_opt, bytes / t_opt.best / 1e9, "GB/s");
         fprintf(stderr, "# axpy max|diff| = %.3e\n", max_abs_diff(y_ref, y_opt, n_axpy));

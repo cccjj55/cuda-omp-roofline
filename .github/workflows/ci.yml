@@ -25,20 +25,14 @@ jobs:
         run: make test
 
       - name: Measure
-        run: make bench
+        run: |
+          mkdir -p results
+          ./build/bench > results/bench.csv
+          cat results/bench.csv
 
       - name: Markdown table
         run: |
-          python3 - <<'EOF' | tee results/bench.md
-          import csv
-          with open('results/bench.csv') as f:
-              rows = list(csv.DictReader(f))
-          print('| kernel | variant | n | best (s) | median (s) | metric | spread |')
-          print('| --- | --- | --- | --- | --- | --- | --- |')
-          for r in rows:
-              print(f"| {r['kernel']} | {r['variant']} | {r['n']} | {r['best_s']} | {r['median_s']} | "
-                    f"{r['metric']} {r['unit']} | {r['spread_pct']}% |")
-          EOF
+          python3 scripts/table.py results/bench.csv | tee results/bench.md
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4

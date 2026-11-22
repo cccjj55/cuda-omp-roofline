@@ -48,6 +48,23 @@ difference between them is the most useful thing on this page.
 Correctness at these sizes: `max|diff|` = 0 for axpy and matmul, 4.7e-20 for softmax (different reduction
 order; that residue is expected, not a bug).
 
+**Run C: this laptop, not a runner.** WSL2 Ubuntu 24.04, `i7-14650HX`, 12 threads visible to OpenMP,
+gcc 16.2.0 (conda-forge). Same binary, same sizes:
+
+| kernel | variant | metric | spread |
+| --- | --- | --- | --- |
+| axpy | ref | 31.94 GB/s | 9.82% |
+| axpy | omp | **58.35 GB/s** | 5.77% |
+| softmax | ref | 0.26 Gelem/s | 1.33% |
+| softmax | omp | **1.20 Gelem/s** | 12.37% |
+| matmul | naive | 2.28 GFLOP/s | 0.51% |
+| matmul | tiled 64 | 16.05 GFLOP/s | 0.93% |
+| matmul | tiled 64 + omp | **70.62 GFLOP/s** | 3.81% |
+
+Same conclusions, different absolute numbers: blocking gives ~7×, threads on top give another 4.4× here versus
+2.2× on the 4-vCPU runner. **Twelve cores change the ratio, not the ranking** — which is the reason every row
+carries a hardware line.
+
 **What is stable across runs and what is not**
 
 - **Stable: tiled → tiled+omp is about 2.2–2.4×.** Both runs agree. Threads on top of blocking is a real,

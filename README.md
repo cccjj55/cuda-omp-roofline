@@ -30,29 +30,42 @@ Measured on GitHub Actions `ubuntu-latest` (4 vCPU), not on my laptop — the ru
 whose hardware I can state exactly and that anyone can re-create.
 
 <!-- RESULTS:BEGIN -->
-Measured on GitHub Actions `ubuntu-latest`: **Intel Xeon Platinum 8573C, 4 vCPU, gcc 15.2.0**,
-`-O3 -march=native -fopenmp`. Full sizes: axpy 16.7 M doubles, softmax 4.2 M doubles, matmul n=512.
-Best of 5 timed runs after one untimed warmup.
+Measured in CI on GitHub Actions `ubuntu-latest`: **Intel Xeon Platinum 8573C, 4 vCPU, gcc 15.2.0**,
+`-O3 -march=native -fopenmp`, 4 threads. Sizes: axpy 16.7 M doubles, softmax 4.2 M doubles, matmul n=512.
+Best and median of 5 timed runs after one untimed warmup. Two separate CI runs are shown because the
+difference between them is the most useful thing on this page.
 
-| kernel | variant | n | best | median | metric | spread |
-| --- | --- | --- | --- | --- | --- | --- |
-| axpy | ref | 16,777,216 | 18.77 ms | 18.83 ms | 21.45 GB/s | 0.30% |
-| axpy | omp (4 threads) | 16,777,216 | 10.02 ms | 10.01 ms | **40.22 GB/s** | 0.09% |
-| softmax | ref | 4,194,304 | 22.68 ms | 22.56 ms | 0.19 Gelem/s | 0.57% |
-| softmax | omp (4 threads) | 4,194,304 | 9.30 ms | 8.93 ms | **0.47 Gelem/s** | 4.13% |
-| matmul | naive | 512 | 235.54 ms | 234.18 ms | 1.15 GFLOP/s | 0.58% |
-| matmul | tiled 64 | 512 | 32.73 ms | 32.63 ms | 8.23 GFLOP/s | 0.29% |
-| matmul | tiled 64 + omp | 512 | 14.65 ms | 14.58 ms | **18.41 GFLOP/s** | 0.48% |
+| kernel | variant | run A (metric) | run B (metric) | run A spread | run B spread |
+| --- | --- | --- | --- | --- | --- |
+| axpy | ref | 21.45 GB/s | 62.77 GB/s | 0.30% | 0.98% |
+| axpy | omp | 40.22 GB/s | 72.96 GB/s | 0.09% | **47.17%** |
+| softmax | ref | 0.19 Gelem/s | 0.28 Gelem/s | 0.57% | 0.50% |
+| softmax | omp | 0.47 Gelem/s | 0.88 Gelem/s | 4.13% | 0.88% |
+| matmul | naive | 1.15 GFLOP/s | 0.36 GFLOP/s | 0.58% | 0.48% |
+| matmul | tiled 64 | 8.23 GFLOP/s | 12.35 GFLOP/s | 0.29% | 0.16% |
+| matmul | tiled 64 + omp | 18.41 GFLOP/s | 30.08 GFLOP/s | 0.48% | 0.12% |
 
-Ratios: axpy **1.9×**, softmax **2.5×**, matmul **7.2×** from blocking alone and **16×** with threads on top.
-Correctness at these sizes: `max|diff|` = 0 for axpy and matmul, 4.7e-20 for softmax (the reduction order
-differs, which is the expected source of that residue).
+Correctness at these sizes: `max|diff|` = 0 for axpy and matmul, 4.7e-20 for softmax (different reduction
+order; that residue is expected, not a bug).
 
-**The quick run is where the interesting failure lives.** At n = 1.05 M, the same OpenMP `axpy` measured
-78.4 GB/s in one run and 5.1 GB/s in the next (spread 19.9%), and `softmax` with threads came out
-**10× slower** than the reference. Nothing was wrong with the code: at that size the array fits in cache
-and the measurement is dominated by thread spin-up and whatever else the shared runner was doing. That is
-exactly why the full-size numbers are the quotable ones and the quick run is only for correctness.
+**What is stable across runs and what is not**
+
+- **Stable: tiled → tiled+omp is about 2.2–2.4×.** Both runs agree. Threads on top of blocking is a real,
+  repeatable gain.
+- **Stable: softmax with threads is 2.5–3.1×.** The work is compute-bound, so scaling survives the shared
+  machine.
+- **Not stable: everything measured against `naive`.** Blocking looks like 7× in run A and 34× in run B —
+  not because blocking changed, but because the naive baseline moved by 3× (1.15 → 0.36 GFLOP/s). A speedup
+  whose denominator is noisy is not a speedup you can quote.
+- **Not quotable: `axpy omp` in run B (47% spread).** The best sample was 5.52 ms and the median 8.12 ms:
+  that row says "the runner was busy", nothing about the kernel.
+
+**The quick run is worse, on purpose.** At n = 1.05 M the same OpenMP `axpy` measured 78.4 GB/s in one run and
+5.1 GB/s in the next, and threaded `softmax` came out 10× *slower* than the reference. At that size the array
+fits in cache and thread spin-up dominates. The quick run exists to check correctness, never to produce a number.
+
+This is why the repo reports best, median and spread instead of a single figure: on a shared runner, a lone
+number is mostly a description of the runner.
 <!-- RESULTS:END -->
 
 ## What the numbers mean

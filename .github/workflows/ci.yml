@@ -1,0 +1,50 @@
+name: ci
+
+on: [push, pull_request]
+
+jobs:
+  build-and-measure:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Toolchain
+        run: |
+          gcc --version | head -1
+          nproc
+          grep -m1 'model name' /proc/cpuinfo
+
+      - name: Build
+        run: make build CFLAGS="-O3 -march=native -fopenmp -Wall -Wextra -std=c11"
+
+      - name: Correctness (quick run, compares every variant against the reference)
+        run: make test
+
+      - name: Measure
+        run: make bench
+
+      - name: Markdown table
+        run: |
+          python3 - <<'EOF' | tee results/bench.md
+          import csv
+          with open('results/bench.csv') as f:
+              rows = list(csv.DictReader(f))
+          print('| kernel | variant | n | best (s) | median (s) | metric | spread |')
+          print('| --- | --- | --- | --- | --- | --- | --- |')
+          for r in rows:
+              print(f"| {r['kernel']} | {r['variant']} | {r['n']} | {r['best_s']} | {r['median_s']} | "
+                    f"{r['metric']} {r['unit']} | {r['spread_pct']}% |")
+          EOF
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: bench-${{ matrix.os }}
+          path: |
+            results/bench.csv
+            results/bench.md
+            build/quick.csv

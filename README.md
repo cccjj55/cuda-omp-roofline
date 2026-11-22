@@ -6,6 +6,8 @@ This is the first rung of the HPC ladder: before touching CUDA or MPI, know what
 Every optimized variant is diffed against a reference implementation *before* it is timed, so a fast
 wrong answer cannot make it into the table.
 
+![hpc-kernels Cache Blocking & OpenMP Scaling](docs/kernels.svg)
+
 ## What is in here
 
 | kernel | variants | what it teaches |

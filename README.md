@@ -107,12 +107,46 @@ number is mostly a description of the runner.
 
 The same rules as [dsh-plugin-bench](https://github.com/cccjj55/dsh-plugin-bench), applied to C.
 
+## The same kernels on the GPU
+
+`make cuda` builds `src/kernels_cuda.cu`. Sizes match the CPU run: axpy 16.7 M doubles, softmax 1.05 M
+doubles, matmul n=512. Device: **RTX 5070 Ti Laptop, sm_120, CUDA 13.5**; CPU rows are the 12-thread
+OpenMP numbers from above (i7-14650HX).
+
+| kernel | CPU 12 threads | GPU | GPU/CPU |
+| --- | --- | --- | --- |
+| axpy (double) | 58.35 GB/s | **402.75 GB/s** | 6.9× |
+| reduce (sum, double) | — | 418.9 GB/s | — |
+| matmul (double, tiled) | 70.62 GFLOP/s | **445.56 GFLOP/s** | 6.3× |
+| matmul (float, tiled) | — (not implemented) | 2,281.56 GFLOP/s | — |
+| softmax (double, one block) | 1.20 Gelem/s | **0.26 Gelem/s** | **0.22×** |
+
+![GPU vs CPU per kernel](docs/kernels_gpu.svg)
+
+Three things this table says that a "GPU is faster" claim does not:
+
+1. **A naive port can be 4.5× slower than 12 CPU threads.** The softmax kernel is one block of 1024
+   threads sweeping 1 M elements — every thread walks 1024 values serially. It is correct and it is
+   terrible. The fix is a grid-stride multi-block version with a two-stage max/sum reduction, which is
+   the next commit, not a bigger GPU.
+2. **FP64 is cut on consumer silicon.** The same tiled matmul runs at 2,281 GFLOP/s in float and
+   445 GFLOP/s in double — a 5.1× ratio that comes from the hardware's FP64 pipe, not from the code.
+   Numerical work that needs double precision gets a much smaller win than the marketing numbers suggest.
+3. **Bandwidth-bound kernels are where the GPU genuinely wins.** axpy moves 3 × 8 bytes per element and
+   runs 6.9× faster than the 12-thread CPU version, close to the device's measured copy bandwidth
+   (392.3 GB/s) — the same wall the SpMV in [cae-parallel-solver](https://github.com/cccjj55/cae-parallel-solver)
+   hits.
+
+Measurement discipline is unchanged: 5 warmup launches, then 10–20 timed launches, and the number
+quoted is the mean of the timed batch (not a single launch). On a laptop GPU the sustained number is
+lower than the burst number — see the sustained-bandwidth table in the solver repo.
+
 ## Status and what comes next
 
 - [x] CPU reference + OpenMP + blocking, correctness-checked
-- [ ] CUDA: `saxpy`, `reduce` (tree + warp shuffle), `softmax`, `tiled matmul` with shared memory and a
-      bank-conflict fix; each with `ncu` metrics (achieved occupancy, DRAM throughput)
+- [x] CUDA: `axpy`, `reduce`, `softmax` (currently one block), `tiled matmul` in float and double
 - [ ] MPI: 2D stencil with halo exchange, strong and weak scaling curves (`mpi-heat`)
+- [ ] multi-block softmax (the one-block version is 4.5× slower than the CPU)
 - [ ] roofline plot: put every kernel on the same arithmetic-intensity axis
 
 The CUDA step needs a GPU; this laptop has one (RTX 5070 Ti Laptop, 12 GB, sm_120) but no CUDA toolkit

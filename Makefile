@@ -29,3 +29,14 @@ bench: test
 
 clean:
 	rm -rf build results
+
+NVCC ?= nvcc
+CUDA_ARCH ?= sm_120
+HOSTCXX ?= g++
+
+cuda:
+	@mkdir -p build
+	$(NVCC) -O3 -arch=$(CUDA_ARCH) -ccbin $(HOSTCXX) src/kernels_cuda.cu -o build/kernels_cuda
+
+gpu-bench: cuda
+	./build/kernels_cuda 16777216 1048576 512

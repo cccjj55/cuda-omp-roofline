@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="300" viewBox="0 0 760 300" role="img" aria-label="GPU speedup over 12-thread OpenMP per kernel">
+  <rect width="760" height="300" fill="#ffffff"/>
+  <text x="24" y="28" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="15" font-weight="600" fill="#0f172a">Same kernel, GPU vs 12-thread OpenMP — the ratio is not uniform</text>
+  <text x="24" y="47" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11" fill="#64748b">RTX 5070 Ti Laptop (sm_120) vs i7-14650HX 12 threads · higher is better · 1.0 = equal</text>
+
+  <line x1="70" y1="230" x2="720" y2="230" stroke="#e2e8f0"/>
+  <line x1="70" y1="230" x2="70" y2="80" stroke="#e2e8f0"/>
+  <g font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="10" fill="#94a3b8">
+    <text x="62" y="234" text-anchor="end">0</text>
+    <text x="62" y="184" text-anchor="end">2</text>
+    <text x="62" y="134" text-anchor="end">4</text>
+    <text x="62" y="84" text-anchor="end">6</text>
+  </g>
+
+  <!-- axpy: 6.9x -->
+  <rect x="120" y="57" width="90" height="173" fill="#0f766e"/>
+  <text x="165" y="49" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="12" font-weight="600" fill="#0f766e" text-anchor="middle">6.9×</text>
+  <text x="165" y="250" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11" fill="#475569" text-anchor="middle">axpy</text>
+  <text x="165" y="266" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="10" fill="#94a3b8" text-anchor="middle">58 → 403 GB/s</text>
+
+  <!-- matmul double: 6.3x -->
+  <rect x="290" y="72" width="90" height="158" fill="#0f766e"/>
+  <text x="335" y="64" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="12" font-weight="600" fill="#0f766e" text-anchor="middle">6.3×</text>
+  <text x="335" y="250" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11" fill="#475569" text-anchor="middle">matmul (double)</text>
+  <text x="335" y="266" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="10" fill="#94a3b8" text-anchor="middle">70.6 → 445.6 GFLOP/s</text>
+
+  <!-- softmax: 0.22x -->
+  <rect x="460" y="230" width="90" height="0" fill="#b91c1c"/>
+  <rect x="460" y="211" width="90" height="19" fill="#b91c1c"/>
+  <text x="505" y="203" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="12" font-weight="600" fill="#b91c1c" text-anchor="middle">0.22×</text>
+  <text x="505" y="250" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11" fill="#475569" text-anchor="middle">softmax (1 block)</text>
+  <text x="505" y="266" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="10" fill="#94a3b8" text-anchor="middle">1.20 → 0.26 Gelem/s</text>
+
+  <text x="600" y="120" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11" fill="#b91c1c">a naive port</text>
+  <text x="600" y="138" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11" fill="#b91c1c">can be 4.5× slower</text>
+  <text x="600" y="156" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11" fill="#94a3b8">than 12 CPU threads</text>
+</svg>

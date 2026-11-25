@@ -66,6 +66,86 @@ __global__ void k_softmax(const double* in, double* out, long n) {
     for (long i = threadIdx.x; i < n; i += blockDim.x) out[i] *= inv;
 }
 
+
+/* ---- grid-stride softmax: two-stage max, two-stage sum, one scale pass ----
+ * The single-block version above is correct but serialises 1024 threads over the whole array.
+ * This one walks the array once per phase with every block busy, so the cost is bandwidth, not latency. */
+__global__ void k_max_partial(const double* in, double* part, long n) {
+    __shared__ double s[256];
+    double m = -INFINITY;
+    for (long i = (long)blockIdx.x * blockDim.x + threadIdx.x; i < n; i += (long)gridDim.x * blockDim.x)
+        m = fmax(m, in[i]);
+    s[threadIdx.x] = m;
+    __syncthreads();
+    for (int off = blockDim.x / 2; off > 0; off >>= 1) {
+        if (threadIdx.x < off) s[threadIdx.x] = fmax(s[threadIdx.x], s[threadIdx.x + off]);
+        __syncthreads();
+    }
+    if (threadIdx.x == 0) part[blockIdx.x] = s[0];
+}
+
+__global__ void k_reduce_max(double* v, int count) {
+    __shared__ double s[256];
+    double m = -INFINITY;
+    for (int i = threadIdx.x; i < count; i += blockDim.x) m = fmax(m, v[i]);
+    __syncthreads();
+    s[threadIdx.x] = m;
+    __syncthreads();
+    for (int off = blockDim.x / 2; off > 0; off >>= 1) {
+        if (threadIdx.x < off) s[threadIdx.x] = fmax(s[threadIdx.x], s[threadIdx.x + off]);
+        __syncthreads();
+    }
+    if (threadIdx.x == 0) v[0] = s[0];
+}
+
+__global__ void k_exp_partial(const double* in, double* out, double* part, double mx, long n) {
+    __shared__ double s[256];
+    double acc = 0.0;
+    for (long i = (long)blockIdx.x * blockDim.x + threadIdx.x; i < n; i += (long)gridDim.x * blockDim.x) {
+        const double v = exp(in[i] - mx);
+        out[i] = v;
+        acc += v;
+    }
+    s[threadIdx.x] = acc;
+    __syncthreads();
+    for (int off = blockDim.x / 2; off > 0; off >>= 1) {
+        if (threadIdx.x < off) s[threadIdx.x] += s[threadIdx.x + off];
+        __syncthreads();
+    }
+    if (threadIdx.x == 0) part[blockIdx.x] = s[0];
+}
+
+__global__ void k_reduce_sum(double* v, int count) {
+    __shared__ double s[256];
+    double acc = 0.0;
+    for (int i = threadIdx.x; i < count; i += blockDim.x) acc += v[i];
+    __syncthreads();
+    s[threadIdx.x] = acc;
+    __syncthreads();
+    for (int off = blockDim.x / 2; off > 0; off >>= 1) {
+        if (threadIdx.x < off) s[threadIdx.x] += s[threadIdx.x + off];
+        __syncthreads();
+    }
+    if (threadIdx.x == 0) v[0] = s[0];
+}
+
+__global__ void k_scale(double* out, double inv, long n) {
+    for (long i = (long)blockIdx.x * blockDim.x + threadIdx.x; i < n; i += (long)gridDim.x * blockDim.x)
+        out[i] *= inv;
+}
+
+/* host side: five kernels, two host synchronisations (max, then total) */
+static void softmax_grid(const double* d_in, double* d_out, double* d_part, long n, int blocks) {
+    double mx = 0.0, total = 0.0;
+    k_max_partial<<<blocks, 256>>>(d_in, d_part, n);
+    k_reduce_max<<<1, 256>>>(d_part, blocks);
+    CHECK(cudaMemcpy(&mx, d_part, sizeof(double), cudaMemcpyDeviceToHost));
+    k_exp_partial<<<blocks, 256>>>(d_in, d_out, d_part, mx, n);
+    k_reduce_sum<<<1, 256>>>(d_part, blocks);
+    CHECK(cudaMemcpy(&total, d_part, sizeof(double), cudaMemcpyDeviceToHost));
+    k_scale<<<blocks, 256>>>(d_out, 1.0 / total, n);
+}
+
 template <typename T>
 __global__ void k_matmul_tiled(const T* a, const T* b, T* c, int n) {
     __shared__ T ta[32][32];
@@ -148,12 +228,15 @@ int main(int argc, char** argv) {
         free(host); cudaFree(x); cudaFree(part);
     }
 
-    /* ---- softmax (single block: latency-bound, stated as such) ---- */
+    /* ---- softmax: single block (naive) vs grid-stride (fixed) ---- */
     {
-        double *in, *out;
+        double *in, *out, *part;
         CHECK(cudaMalloc(&in, n_soft * 8));
         CHECK(cudaMalloc(&out, n_soft * 8));
+        const int blocks = 512;
+        CHECK(cudaMalloc(&part, blocks * 8));
         CHECK(cudaMemset(in, 0, n_soft * 8));
+
         const int block = 1024;
         for (int w = 0; w < 3; ++w) k_softmax<<<1, block, block * 8>>>(in, out, n_soft);
         CHECK(cudaDeviceSynchronize());
@@ -161,9 +244,20 @@ int main(int argc, char** argv) {
         for (int r = 0; r < 10; ++r) k_softmax<<<1, block, block * 8>>>(in, out, n_soft);
         cudaEventRecord(t1);
         CHECK(cudaEventSynchronize(t1));
-        const float ms = ms_of(t0, t1) / 10.0f;
-        printf("softmax,double,%ld,%.4f,%.4f,Gelem/s,0\n", n_soft, ms, n_soft / (ms * 1e-3) / 1e9);
-        cudaFree(in); cudaFree(out);
+        const float ms1 = ms_of(t0, t1) / 10.0f;
+        printf("softmax,1block,%ld,%.4f,%.4f,Gelem/s,0\n", n_soft, ms1, n_soft / (ms1 * 1e-3) / 1e9);
+
+        for (int w = 0; w < 3; ++w) softmax_grid(in, out, part, n_soft, blocks);
+        CHECK(cudaDeviceSynchronize());
+        cudaEventRecord(t0);
+        for (int r = 0; r < 10; ++r) softmax_grid(in, out, part, n_soft, blocks);
+        cudaEventRecord(t1);
+        CHECK(cudaEventSynchronize(t1));
+        const float ms2 = ms_of(t0, t1) / 10.0f;
+        printf("softmax,grid,%ld,%.4f,%.4f,Gelem/s,0\n", n_soft, ms2, n_soft / (ms2 * 1e-3) / 1e9);
+        printf("# softmax speedup (grid vs 1block): %.2fx\n", ms1 / ms2);
+
+        cudaFree(in); cudaFree(out); cudaFree(part);
     }
 
     /* ---- matmul, float and double ---- */

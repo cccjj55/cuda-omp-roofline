@@ -119,16 +119,18 @@ OpenMP numbers from above (i7-14650HX).
 | reduce (sum, double) | — | 418.9 GB/s | — |
 | matmul (double, tiled) | 70.62 GFLOP/s | **445.56 GFLOP/s** | 6.3× |
 | matmul (float, tiled) | — (not implemented) | 2,281.56 GFLOP/s | — |
-| softmax (double, one block) | 1.20 Gelem/s | **0.26 Gelem/s** | **0.22×** |
+| softmax (double, one block — naive) | 1.20 Gelem/s | 0.26 Gelem/s | **0.22×** |
+| softmax (double, grid-stride — fixed) | 1.20 Gelem/s | **5.90 Gelem/s** | **4.9×** |
 
 ![GPU vs CPU per kernel](docs/kernels_gpu.svg)
 
 Three things this table says that a "GPU is faster" claim does not:
 
-1. **A naive port can be 4.5× slower than 12 CPU threads.** The softmax kernel is one block of 1024
-   threads sweeping 1 M elements — every thread walks 1024 values serially. It is correct and it is
-   terrible. The fix is a grid-stride multi-block version with a two-stage max/sum reduction, which is
-   the next commit, not a bigger GPU.
+1. **A naive port can be 4.5× slower than 12 CPU threads — and then 22.9× faster than itself.**
+   The first softmax was one block of 1024 threads sweeping 1 M elements, so every thread walked 1024
+   values serially: 0.26 Gelem/s, or 0.22× of the CPU. Rewritten as grid-stride with two-stage max and
+   sum reductions, the same maths runs at **5.90 Gelem/s** — 22.9× the naive version and 4.9× the CPU.
+   Nothing about the GPU changed; only the launch geometry and the reduction structure did.
 2. **FP64 is cut on consumer silicon.** The same tiled matmul runs at 2,281 GFLOP/s in float and
    445 GFLOP/s in double — a 5.1× ratio that comes from the hardware's FP64 pipe, not from the code.
    Numerical work that needs double precision gets a much smaller win than the marketing numbers suggest.

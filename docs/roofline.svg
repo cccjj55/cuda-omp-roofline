@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="920" height="390" viewBox="0 0 920 390">
+<rect width="100%" height="100%" rx="12" fill="#0d1117"/>
+<text x="32" y="34" fill="#f0f6fc" font-family="Segoe UI, Arial, sans-serif" font-size="17" font-weight="700">Measured Arithmetic Intensity vs Performance (i7-14650HX 12t vs RTX 5070 Ti sm_120)</text>
+<text x="32" y="54" fill="#8b949e" font-family="Segoe UI, Arial, sans-serif" font-size="12">Log-log view: axpy/reduce/softmax sit on the DRAM slope (58.4 GB/s CPU vs 402 GB/s GPU); FP64 matmul hits cut FP64 pipe (5.1x below FP32)</text>
+<rect x="86" y="76" width="780" height="260" rx="6" fill="#161b22" stroke="#30363d"/>
+<line x1="86" y1="305.6" x2="866" y2="305.6" stroke="#21262d"/>
+<text x="78" y="309.6" text-anchor="end" fill="#8b949e" font-family="Consolas, monospace" font-size="10">5</text>
+<line x1="86" y1="282.5" x2="866" y2="282.5" stroke="#21262d"/>
+<text x="78" y="286.5" text-anchor="end" fill="#8b949e" font-family="Consolas, monospace" font-size="10">10</text>
+<line x1="86" y1="229.0" x2="866" y2="229.0" stroke="#21262d"/>
+<text x="78" y="233.0" text-anchor="end" fill="#8b949e" font-family="Consolas, monospace" font-size="10">50</text>
+<line x1="86" y1="206.0" x2="866" y2="206.0" stroke="#21262d"/>
+<text x="78" y="210.0" text-anchor="end" fill="#8b949e" font-family="Consolas, monospace" font-size="10">100</text>
+<line x1="86" y1="152.5" x2="866" y2="152.5" stroke="#21262d"/>
+<text x="78" y="156.5" text-anchor="end" fill="#8b949e" font-family="Consolas, monospace" font-size="10">500</text>
+<line x1="86" y1="129.5" x2="866" y2="129.5" stroke="#21262d"/>
+<text x="78" y="133.5" text-anchor="end" fill="#8b949e" font-family="Consolas, monospace" font-size="10">1000</text>
+<line x1="86" y1="93.0" x2="866" y2="93.0" stroke="#21262d"/>
+<text x="78" y="97.0" text-anchor="end" fill="#8b949e" font-family="Consolas, monospace" font-size="10">3000</text>
+<line x1="149.6" y1="76" x2="149.6" y2="336" stroke="#21262d"/>
+<text x="149.6" y="354" text-anchor="middle" fill="#8b949e" font-family="Consolas, monospace" font-size="10">0.08 F/B</text>
+<line x1="303.6" y1="76" x2="303.6" y2="336" stroke="#21262d"/>
+<text x="303.6" y="354" text-anchor="middle" fill="#8b949e" font-family="Consolas, monospace" font-size="10">0.25 F/B</text>
+<line x1="491.1" y1="76" x2="491.1" y2="336" stroke="#21262d"/>
+<text x="491.1" y="354" text-anchor="middle" fill="#8b949e" font-family="Consolas, monospace" font-size="10">1 F/B</text>
+<line x1="678.5" y1="76" x2="678.5" y2="336" stroke="#21262d"/>
+<text x="678.5" y="354" text-anchor="middle" fill="#8b949e" font-family="Consolas, monospace" font-size="10">4 F/B</text>
+<line x1="772.3" y1="76" x2="772.3" y2="336" stroke="#21262d"/>
+<text x="772.3" y="354" text-anchor="middle" fill="#8b949e" font-family="Consolas, monospace" font-size="10">8 F/B</text>
+<line x1="86.0" y1="323.5" x2="772.3" y2="154.8" stroke="#58a6ff" stroke-dasharray="5,5" stroke-opacity="0.65" stroke-width="1.5"/>
+<text x="545.9" y="202.4" fill="#58a6ff" font-family="Consolas, monospace" font-size="10">CPU DRAM wall (58.4 GB/s)</text>
+<line x1="86.0" y1="259.3" x2="772.3" y2="90.6" stroke="#56d364" stroke-dasharray="5,5" stroke-opacity="0.65" stroke-width="1.5"/>
+<text x="515.7" y="145.7" fill="#56d364" font-family="Consolas, monospace" font-size="10">GPU DRAM wall (402.4 GB/s)</text>
+<line x1="491.1" y1="102.0" x2="866" y2="102.0" stroke="#a371f7" stroke-dasharray="3,4" stroke-opacity="0.6" stroke-width="1.2"/>
+<text x="858" y="96.0" text-anchor="end" fill="#a371f7" font-family="Consolas, monospace" font-size="10">FP32 tiled peak (2,286 GFLOP/s)</text>
+<line x1="491.1" y1="156.4" x2="866" y2="156.4" stroke="#f0883e" stroke-dasharray="3,4" stroke-opacity="0.6" stroke-width="1.2"/>
+<text x="858" y="150.4" text-anchor="end" fill="#f0883e" font-family="Consolas, monospace" font-size="10">FP64 tiled peak (444 GFLOP/s)</text>
+<circle cx="155.0" cy="306.5" r="5" fill="#58a6ff" stroke="#0d1117" stroke-width="1.5"/>
+<text x="163.0" y="318.5" text-anchor="start" fill="#e6edf3" font-family="Consolas, monospace" font-size="10">axpy CPU (12t) (4.9)</text>
+<circle cx="155.0" cy="242.3" r="5" fill="#56d364" stroke="#0d1117" stroke-width="1.5"/>
+<text x="163.0" y="258.3" text-anchor="start" fill="#e6edf3" font-family="Consolas, monospace" font-size="10">axpy GPU (33.5)</text>
+<circle cx="209.9" cy="227.6" r="5" fill="#56d364" stroke="#0d1117" stroke-width="1.5"/>
+<text x="199.9" y="213.6" text-anchor="middle" fill="#e6edf3" font-family="Consolas, monospace" font-size="10">reduce GPU (shfl) (52.2)</text>
+<circle cx="285.7" cy="222.7" r="5" fill="#56d364" stroke="#0d1117" stroke-width="1.5"/>
+<text x="293.7" y="238.7" text-anchor="start" fill="#e6edf3" font-family="Consolas, monospace" font-size="10">softmax GPU (grid) (60.6)</text>
+<circle cx="678.5" cy="217.6" r="5" fill="#58a6ff" stroke="#0d1117" stroke-width="1.5"/>
+<text x="670.5" y="233.6" text-anchor="end" fill="#e6edf3" font-family="Consolas, monospace" font-size="10">matmul CPU (tiled+omp) (70.6)</text>
+<circle cx="678.5" cy="156.4" r="5" fill="#f0883e" stroke="#0d1117" stroke-width="1.5"/>
+<text x="670.5" y="172.4" text-anchor="end" fill="#e6edf3" font-family="Consolas, monospace" font-size="10">matmul GPU (fp64) (444.4)</text>
+<circle cx="772.3" cy="102.0" r="5" fill="#a371f7" stroke="#0d1117" stroke-width="1.5"/>
+<text x="764.3" y="118.0" text-anchor="end" fill="#e6edf3" font-family="Consolas, monospace" font-size="10">matmul GPU (fp32) (2285.9)</text>
+<text x="476.0" y="372" text-anchor="middle" fill="#8b949e" font-family="Segoe UI, Arial, sans-serif" font-size="11">Arithmetic Intensity (FLOP / Byte)</text>
+</svg>

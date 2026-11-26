@@ -110,49 +110,48 @@ The same rules as [dsh-plugin-bench](https://github.com/cccjj55/dsh-plugin-bench
 ## The same kernels on the GPU
 
 `make cuda` builds `src/kernels_cuda.cu`. Sizes match the CPU run: axpy 16.7 M doubles, softmax 1.05 M
-doubles, matmul n=512. Device: **RTX 5070 Ti Laptop, sm_120, CUDA 13.5**; CPU rows are the 12-thread
-OpenMP numbers from above (i7-14650HX).
+doubles, matmul n=512. Every GPU kernel runs on non-zero deterministic inputs and is checked against
+a full CPU reference (`max|diff|`) before timing. Device: **RTX 5070 Ti Laptop, sm_120, CUDA 13.5**;
+CPU rows are the 12-thread OpenMP numbers from above (i7-14650HX).
 
-| kernel | CPU 12 threads | GPU | GPU/CPU |
-| --- | --- | --- | --- |
-| axpy (double) | 58.35 GB/s | **402.75 GB/s** | 6.9× |
-| reduce (sum, double) | — | 418.9 GB/s | — |
-| matmul (double, tiled) | 70.62 GFLOP/s | **445.56 GFLOP/s** | 6.3× |
-| matmul (float, tiled) | — (not implemented) | 2,281.56 GFLOP/s | — |
-| softmax (double, one block — naive) | 1.20 Gelem/s | 0.26 Gelem/s | **0.22×** |
-| softmax (double, grid-stride — fixed) | 1.20 Gelem/s | **5.90 Gelem/s** | **4.9×** |
+| kernel | CPU 12 threads | GPU | GPU/CPU | max\|diff\| vs CPU |
+| --- | --- | --- | --- | --- |
+| axpy (double) | 58.35 GB/s | **402.40 GB/s** | 6.9× | `2.22e-16` |
+| reduce (sum, double, warp shuffle) | — | **417.9 GB/s** | — | `7.45e-16` |
+| matmul (double, tiled) | 70.62 GFLOP/s | **444.42 GFLOP/s** | 6.3× | `7.82e-14` |
+| matmul (float, tiled) | — (not implemented) | **2,285.91 GFLOP/s** | — | `2.08e-04` |
+| softmax (double, one block — naive) | 1.20 Gelem/s | 0.2679 Gelem/s | **0.22×** | `1.19e-18` |
+| softmax (double, grid-stride + device scalars) | 1.20 Gelem/s | **8.6532 Gelem/s** | **7.2×** | `1.19e-18` |
 
 ![GPU vs CPU per kernel](docs/kernels_gpu.svg)
 
 Three things this table says that a "GPU is faster" claim does not:
 
-1. **A naive port can be 4.5× slower than 12 CPU threads — and then 22.9× faster than itself.**
+1. **A naive port can be 4.5× slower than 12 CPU threads — and then 32.3× faster than itself.**
    The first softmax was one block of 1024 threads sweeping 1 M elements, so every thread walked 1024
-   values serially: 0.26 Gelem/s, or 0.22× of the CPU. Rewritten as grid-stride with two-stage max and
-   sum reductions, the same maths runs at **5.90 Gelem/s** — 22.9× the naive version and 4.9× the CPU.
-   Nothing about the GPU changed; only the launch geometry and the reduction structure did.
-2. **FP64 is cut on consumer silicon.** The same tiled matmul runs at 2,281 GFLOP/s in float and
-   445 GFLOP/s in double — a 5.1× ratio that comes from the hardware's FP64 pipe, not from the code.
+   values serially: 0.2679 Gelem/s, or 0.22× of the CPU. Rewritten as grid-stride with warp-shuffle
+   (`__shfl_down_sync`) two-stage reductions and device-resident scalars (zero host round trips),
+   the same maths runs at **8.6532 Gelem/s** — **32.3×** the naive version and **7.2×** the CPU.
+   Nothing about the GPU changed; only the launch geometry and synchronization structure did.
+2. **FP64 is cut on consumer silicon.** The same tiled matmul runs at 2,286 GFLOP/s in float and
+   444 GFLOP/s in double — a 5.1× ratio that comes from the hardware's FP64 pipe, not from the code.
    Numerical work that needs double precision gets a much smaller win than the marketing numbers suggest.
 3. **Bandwidth-bound kernels are where the GPU genuinely wins.** axpy moves 3 × 8 bytes per element and
    runs 6.9× faster than the 12-thread CPU version, close to the device's measured copy bandwidth
    (392.3 GB/s) — the same wall the SpMV in [cae-parallel-solver](https://github.com/cccjj55/cae-parallel-solver)
    hits.
 
-Measurement discipline is unchanged: 5 warmup launches, then 10–20 timed launches, and the number
+Measurement discipline is unchanged: warmup launches, then 10–20 timed launches, and the number
 quoted is the mean of the timed batch (not a single launch). On a laptop GPU the sustained number is
 lower than the burst number — see the sustained-bandwidth table in the solver repo.
 
 ## Status and what comes next
 
 - [x] CPU reference + OpenMP + blocking, correctness-checked
-- [x] CUDA: `axpy`, `reduce`, `softmax` (currently one block), `tiled matmul` in float and double
-- [ ] MPI: 2D stencil with halo exchange, strong and weak scaling curves (`mpi-heat`)
-- [ ] multi-block softmax (the one-block version is 4.5× slower than the CPU)
-- [ ] roofline plot: put every kernel on the same arithmetic-intensity axis
-
-The CUDA step needs a GPU; this laptop has one (RTX 5070 Ti Laptop, 12 GB, sm_120) but no CUDA toolkit
-in WSL yet. Numbers will be added with the hardware line attached, not before.
+- [x] CUDA: `axpy`, `reduce` (warp shuffle), `softmax` (1-block naive + grid-stride device-scalar rewrite),
+      `tiled matmul` in float and double — all verified against CPU reference (`max|diff|`)
+- [x] MPI: 2D stencil with halo exchange, strong and weak scaling curves ([mpi-heat](https://github.com/cccjj55/mpi-heat))
+- [ ] `ncu` occupancy / memory-throughput capture & unified roofline plot across CPU + GPU kernels
 
 ## License
 

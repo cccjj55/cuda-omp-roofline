@@ -30,21 +30,21 @@
   <text x="425" y="270" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11" fill="#475569" text-anchor="middle">softmax, 1 block</text>
   <text x="425" y="286" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="10" fill="#94a3b8" text-anchor="middle">naive port</text>
 
-  <!-- softmax grid 4.9 -->
-  <rect x="518" y="128" width="86" height="122" fill="#0f766e"/>
-  <text x="561" y="120" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="12" font-weight="600" fill="#0f766e" text-anchor="middle">4.9×</text>
+  <!-- softmax grid 7.2 -->
+  <rect x="518" y="70" width="86" height="180" fill="#0f766e"/>
+  <text x="561" y="62" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="12" font-weight="600" fill="#0f766e" text-anchor="middle">7.2×</text>
   <text x="561" y="270" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11" fill="#475569" text-anchor="middle">softmax, grid</text>
-  <text x="561" y="286" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="10" fill="#94a3b8" text-anchor="middle">1.20 → 5.90 Gelem/s</text>
+  <text x="561" y="286" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="10" fill="#94a3b8" text-anchor="middle">1.20 → 8.65 Gelem/s</text>
 
   <!-- arrow between the two softmax bars -->
   <g stroke="#0f766e" stroke-width="2" fill="none">
-    <path d="M470 205 C 495 185, 500 165, 516 150" marker-end="url(#a)"/>
+    <path d="M470 205 C 495 170, 500 130, 516 105" marker-end="url(#a)"/>
   </g>
   <defs><marker id="a" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
     <path d="M0,0 L6,3 L0,6 z" fill="#0f766e"/></marker></defs>
-  <text x="470" y="196" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11" fill="#0f766e">rewrite: 22.9×</text>
+  <text x="454" y="196" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11" fill="#0f766e">rewrite: 32.3×</text>
 
-  <text x="640" y="150" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="10" fill="#94a3b8">grid-stride</text>
-  <text x="640" y="164" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="10" fill="#94a3b8">+ 2-stage</text>
-  <text x="640" y="178" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="10" fill="#94a3b8">reduction</text>
+  <text x="625" y="140" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="10" fill="#94a3b8">grid-stride</text>
+  <text x="625" y="154" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="10" fill="#94a3b8">+ warp shuffle</text>
+  <text x="625" y="168" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="10" fill="#94a3b8">+ device scalars</text>
 </svg>

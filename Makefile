@@ -36,7 +36,7 @@ HOSTCXX ?= g++
 
 cuda:
 	@mkdir -p build
-	$(NVCC) -O3 -arch=$(CUDA_ARCH) -ccbin $(HOSTCXX) src/kernels_cuda.cu -o build/kernels_cuda
+	$(NVCC) -O3 -Xcompiler -O3 -arch=$(CUDA_ARCH) -ccbin $(HOSTCXX) src/kernels_cuda.cu -o build/kernels_cuda
 
 gpu-bench: cuda
 	./build/kernels_cuda 16777216 1048576 512

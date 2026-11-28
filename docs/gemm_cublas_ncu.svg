@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="980" height="360" viewBox="0 0 980 360">
+<rect width="100%" height="100%" rx="12" fill="#0d1117"/>
+<text x="28" y="34" fill="#f0f6fc" font-family="Segoe UI, Arial, sans-serif" font-size="17" font-weight="700">GEMM Scaling (n=2048): Naive Shared Mem vs Register Tiling vs cuBLAS Tensor Core (RTX 5070 Ti)</text>
+<text x="28" y="54" fill="#8b949e" font-family="Segoe UI, Arial, sans-serif" font-size="12">Higher TFLOP/s comes with LOWER occupancy (8.3% vs 89.7%): large tiles + Tensor Cores clear MIO stalls (2966% -&gt; 6.7%)</text>
+<rect x="28" y="74" width="924" height="252" rx="8" fill="#161b22" stroke="#30363d"/>
+<text x="173" y="112" text-anchor="end" fill="#e6edf3" font-family="Consolas, monospace" font-size="11" font-weight="700">custom smem 32x32</text>
+<rect x="185" y="98" width="10.0" height="20" rx="4" fill="#f85149"/>
+<text x="205.0" y="112" fill="#f0f6fc" font-family="Consolas, monospace" font-size="11">1.33 TFLOP/s</text>
+<text x="735" y="112" fill="#8b949e" font-family="Consolas, monospace" font-size="10">Occ 66.7% · MIO stall 2965%</text>
+<text x="173" y="156" text-anchor="end" fill="#e6edf3" font-family="Consolas, monospace" font-size="11" font-weight="700">custom reg 4x4</text>
+<rect x="185" y="142" width="44.3" height="20" rx="4" fill="#d29922"/>
+<text x="239.2" y="156" fill="#f0f6fc" font-family="Consolas, monospace" font-size="11">5.90 TFLOP/s</text>
+<text x="735" y="156" fill="#8b949e" font-family="Consolas, monospace" font-size="10">Occ 89.7% · MIO stall 1143%</text>
+<text x="173" y="200" text-anchor="end" fill="#e6edf3" font-family="Consolas, monospace" font-size="11" font-weight="700">cuBLAS FP32 SIMT</text>
+<rect x="185" y="186" width="139.8" height="20" rx="4" fill="#58a6ff"/>
+<text x="334.8" y="200" fill="#f0f6fc" font-family="Consolas, monospace" font-size="11">18.64 TFLOP/s</text>
+<text x="735" y="200" fill="#8b949e" font-family="Consolas, monospace" font-size="10">Occ 16.6% · MIO stall 7.6%</text>
+<text x="173" y="244" text-anchor="end" fill="#e6edf3" font-family="Consolas, monospace" font-size="11" font-weight="700">cuBLAS TF32 TC</text>
+<rect x="185" y="230" width="185.2" height="20" rx="4" fill="#a371f7"/>
+<text x="380.2" y="244" fill="#f0f6fc" font-family="Consolas, monospace" font-size="11">24.69 TFLOP/s</text>
+<text x="735" y="244" fill="#8b949e" font-family="Consolas, monospace" font-size="10">Occ 8.3% · Tensor Pipe 48.3%</text>
+<text x="173" y="288" text-anchor="end" fill="#e6edf3" font-family="Consolas, monospace" font-size="11" font-weight="700">cuBLAS FP16 TC</text>
+<rect x="185" y="274" width="415.0" height="20" rx="4" fill="#3fb950"/>
+<text x="610.0" y="288" fill="#f0f6fc" font-family="Consolas, monospace" font-size="11">55.33 TFLOP/s</text>
+<text x="735" y="288" fill="#8b949e" font-family="Consolas, monospace" font-size="10">Occ 8.3% · Tensor Pipe 47.4%</text>
+<text x="28" y="348" fill="#8b949e" font-family="Segoe UI, Arial, sans-serif" font-size="10">Measured via cublas_tensor_bench (CPU/cuBLAS rel_err &lt; 4.3e-4) and Nsight Compute 2025.1.0 (CC 12.0)</text>
+</svg>

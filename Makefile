@@ -40,3 +40,8 @@ cuda:
 
 gpu-bench: cuda
 	./build/kernels_cuda 16777216 1048576 512
+
+cublas-bench:
+	@mkdir -p build
+	$(NVCC) -O3 -std=c++17 -arch=$(CUDA_ARCH) -lcublas src/cublas_tensor_bench.cu -o build/cublas_tensor_bench
+	./build/cublas_tensor_bench 2048 20

@@ -58,8 +58,24 @@ reference before reporting milliseconds:
    and device-resident scalars hit `8.6532 Gelem/s` (`7.2×` CPU).
 2. **Consumer FP64 is cut:** `matmul` drops `5.1×` from float (`2,286 GFLOP/s`) to double (`444 GFLOP/s`).
 3. **Bandwidth ceilings align across projects:** `axpy` hits `58.35 GB/s` (CPU) and `402.4 GB/s` (GPU)—the
-   same memory walls hit by CSR SpMV in [fem-diffusion-cuda](https://github.com/cccjj55/fem-diffusion-cuda)
-   and 2D Jacobi in [jacobi-halo-mpi](https://github.com/cccjj55/jacobi-halo-mpi).
+   same memory walls hit by CSR SpMV in [fem-diffusion-cuda](https://github.com/cccjj55/fem-diffusion-cuda),
+   [chiplet-signoff-cuda](https://github.com/cccjj55/chiplet-signoff-cuda), and 2D Jacobi in [jacobi-halo-mpi](https://github.com/cccjj55/jacobi-halo-mpi).
+
+## Custom GEMM vs `cuBLAS` Tensor Cores & `ncu` Stall Profiling (`src/cublas_tensor_bench.cu`)
+
+To answer *"how far is naive shared-memory tiling from Tensor Core `cuBLAS`, and why?"*, [src/cublas_tensor_bench.cu](src/cublas_tensor_bench.cu) benchmarks 5 GEMM implementations at `n = 1024, 2048` on RTX 5070 Ti (`CC 12.0`, CUDA `12.8`) and profiles each kernel directly with **Nsight Compute 2025.1.0 (`ncu`)**:
+
+![GEMM Scaling vs cuBLAS and NCU Stalls](docs/gemm_cublas_ncu.svg)
+
+| Variant | `n=1024` (TFLOP/s) | `n=2048` (TFLOP/s) | Rel Err vs `cuBLAS FP32` | `ncu` Occupancy | `ncu` Tensor Pipe | `ncu` MIO Throttle | `ncu` Long Scoreboard |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `gemm_smem_32x32` | 1.42 | 1.33 | `8.14e-06` | 66.7% | 0.0% | **2,965.6%** | **353.5%** |
+| `gemm_reg_4x4` (bank-conflict-free + `float4`) | **7.14** (`5.0×`) | **5.90** (`4.4×`) | `8.14e-06` | **89.7%** | 0.0% | **1,142.9%** (`2.6×` lower) | **127.2%** (`2.8×` lower) |
+| `cublas_fp32_simt` (`cutlass_80_simt_256x128`) | 16.83 | 18.64 | `0.00e+00` | 16.6% | 0.0% | 7.6% | 5.2% |
+| `cublas_tf32_tc` (`tensorop_s1688_256x64`) | 20.87 | 24.69 | `4.23e-04` | 8.3% | **48.3%** | 2.3% | 5.3% |
+| `cublas_fp16_tc` (`tensorop_s16816_256x64`) | **38.46** | **55.33** (`41.6×`) | `4.23e-04` | **8.3%** | **47.4%** | **6.7%** | **18.6%** |
+
+- **Why low occupancy beats high occupancy on compute-bound GEMM**: `gemm_smem_32x32` runs at `66.7%` occupancy yet stalls massively on shared-memory queue (`MIO throttle = 2,965.6%`). Adding `4×4` register tiling cuts MIO pressure `2.6×` (`1.33 → 5.90 TFLOP/s`). Meanwhile CUTLASS `cuBLAS` drops occupancy intentionally to **`8.3%–16.6%`** to allocate `256×128`/`256×64` register tiles and deep async pipelines, eliminating MIO throttling (`2%–8%`) and unlocking **`55.33 TFLOP/s` FP16 Tensor Core throughput**.
 
 ## Build and run
 
